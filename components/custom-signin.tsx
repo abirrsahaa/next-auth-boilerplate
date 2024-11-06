@@ -28,6 +28,9 @@ import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { Mail, Chrome } from 'lucide-react';
 import { CustomSignInProps } from '@/types';
 import { formSchema } from '@/lib/validation';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/router';
 
 export default function CustomSignIn({
   providers = ['google', 'github', 'credentials'],
@@ -39,6 +42,10 @@ export default function CustomSignIn({
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(error);
+
+  const router = useRouter();
+
+  const session = useSession();
 
   // Initialize form after mounting
   const form = useForm<z.infer<typeof formSchema>>({
@@ -64,7 +71,15 @@ export default function CustomSignIn({
     try {
       // Your authentication logic here
       console.log('Form values:', values);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const res = await signIn('credentials', {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+      console.log('the res is ', res);
+      if (res?.error) console.log(res.error);
+      else router.push('/');
     } catch (error) {
       console.error('An error occurred:', error);
       setErrorMsg('An error occurred during sign in');
@@ -108,7 +123,7 @@ export default function CustomSignIn({
             variant="outline"
             className="w-full"
             type="button"
-            onClick={() => {}}
+            onClick={async () => await signIn('google')}
           >
             <Chrome className="mr-2 h-4 w-4" />
             Continue with Google
@@ -187,6 +202,17 @@ export default function CustomSignIn({
           </Form>
         )}
       </CardContent>
+      {session.status == 'authenticated' && JSON.stringify(session)}
+      {session.status == 'authenticated' && (
+        <Button
+          variant="outline"
+          className="w-full"
+          type="button"
+          onClick={async () => await signOut()}
+        >
+          signout
+        </Button>
+      )}
       <CardFooter>
         <p className="text-center text-sm text-gray-600 mt-2 w-full">
           Don&apos;t have an account?{' '}
